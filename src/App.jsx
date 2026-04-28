@@ -1,34 +1,53 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
 function App() {
-  // State to store API data
-  const [users, setUsers] = useState([]);
+  const [query, setQuery] = useState("");
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Fetch data function
-  const fetchUsers = async () => {
+  const handleSearch = async () => {
+    if (!query) return;
+
+    setLoading(true);
+    setError(null);
+
     try {
-      const response = await fetch(`https://api.openweathermap.org/data/3.0/onecall?lat={8}&lon={lon}&exclude={part}&appid={f1c4ce8dc052cb6cf9dc9de9c185692c}`);
-      const data = await response.json();
-      setUsers(data);
-    } catch (error) {
-      console.log("Error fetching data:", error);
+      const res = await fetch(`https://openlibrary.org/search.json?q=${query}`);
+
+      if (!res.ok) throw new Error("Failed to fetch");
+
+      const data = await res.json();
+      setBooks(data.docs);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // useEffect runs when component loads
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
   return (
-    <div style={{ textAlign: "center" }}>
-      <h1>User List</h1>
+    <div style={{ padding: "20px" }}>
+      <h1>Book Search</h1>
 
-      {users.map((user) => (
-        <div key={user.id} style={{ border: "1px solid gray", margin: "10px", padding: "10px" }}>
-          <h3>{user.name}</h3>
-          <p>{user.email}</p>
-          <p>{user.city}</p>
+      <input
+        type="text"
+        placeholder="Enter book name"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+
+      <button onClick={handleSearch}>Search</button>
+
+      {loading && <p>Loading...</p>}
+      {error && <p>Error: {error}</p>}
+
+      {books.slice(0, 10).map((book, index) => (
+        <div key={index}>
+          <h3>{book.title}</h3>
+          <p>Author: {book.author_name?.[0]}</p>
+          <p>Year: {book.first_publish_year}</p>
+          <hr />
         </div>
       ))}
     </div>
